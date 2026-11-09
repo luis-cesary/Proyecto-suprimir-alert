@@ -1,5 +1,9 @@
 # Supimir — gestión manual de alertas F5 de Zabbix 7.4
 
+> **Consola sin parámetros:** `python ejecutar_automatico.py` realiza una pasada real leyendo todo desde `config.env`. Para la programación diaria y las variables `AUTO_`, consultar [AUTOMATIZACION.md](AUTOMATIZACION.md). No utiliza el JSON anterior por defecto.
+
+> **Actualización:** la web y la consola agregan un mensaje al suprimir. La ejecución diaria para BANCO ESTADO (00:01 Chile, High/Disaster, límite configurable 100) y su instalación están descritas en [AUTOMATIZACION.md](AUTOMATIZACION.md). El timer está preparado, no instalado en MonZabbix.
+
 Aplicación Python con **vista web local y menú de terminal** para consultar problemas abiertos, identificar alertas High de Pools/Virtual Servers F5 con antigüedad superior al umbral elegido y suprimir eventos concretos previa confirmación. Arranca en **simulación / solo lectura**. No se ha conectado ni probado contra MonZabbix durante el desarrollo.
 
 ## Inicio rápido de la vista web
@@ -99,7 +103,7 @@ zabbix_f5_alert_manager/
 └── exports/.gitkeep
 ```
 
-No ejecuta SQL, scripts remotos, cron ni systemd. No modifica triggers, ítems, templates, hosts, servicios F5, Media types, InvGate o `EnableGlobalScripts=0`. No requiere reiniciar Zabbix. No implementa login ni autorización local: se utiliza un token de Zabbix con los permisos que su administrador ya haya establecido. El adaptador web local fue añadido por solicitud posterior; el menú original sigue disponible sin `--web`.
+No ejecuta SQL ni scripts remotos de Zabbix. La programación diaria opcional usa un timer systemd propio, que se instala por separado. No modifica triggers, ítems, templates, hosts, servicios F5, Media types, InvGate o `EnableGlobalScripts=0`. No requiere reiniciar Zabbix. No implementa login ni autorización local: se utiliza un token de Zabbix con los permisos que su administrador ya haya establecido. El adaptador web local fue añadido por solicitud posterior; el menú original sigue disponible sin `--web`.
 
 **La supresión sí puede alterar la visibilidad y las notificaciones/escalaciones de los eventos seleccionados, incluida su entrega a InvGate según las acciones existentes.** No es posible garantizar notificaciones idénticas al suprimir. En la primera etapa, con `DRY_RUN=true`, no se modifica ningún evento.
 
@@ -235,7 +239,7 @@ Seleccionar grupo y equipos, consultar y elegir la opción 5. Elegir **un único
 Antes de cada escritura se vuelve a consultar el Event ID restringido a los hosts seleccionados y se valida que siga abierto, con la severidad seleccionada (High por defecto), no suprimido, F5 y con antigüedad superior al umbral actualmente elegido (14 días por defecto). Si desapareció, se recuperó o cambió, se omite. La única llamada de escritura posible tiene este contenido:
 
 ```json
-{"eventids": ["EVENT_ID"], "action": 32, "suppress_until": 0}
+{"eventids": ["EVENT_ID"], "action": 36, "suppress_until": 0, "message": "Suprimido por superar el tiempo de espera aprobado con el cliente. Plazo aplicado: 14 días."}
 ```
 
 Se valida el Event ID devuelto y se vuelve a consultar el estado. Cada evento tiene resultado individual y registro local. Una respuesta inesperada, timeout o imposibilidad de verificar produce resultado no confirmado; **no se reintenta automáticamente**. Ante un timeout, la API podría haber aplicado la operación: comprobar en Zabbix antes de una nueva ejecución.
@@ -284,9 +288,9 @@ Todas las llamadas están simuladas; no se usan credenciales reales ni escritura
 - [hostgroup.get](https://www.zabbix.com/documentation/7.4/en/manual/api/reference/hostgroup/get): grupos y búsqueda.
 - [host.get](https://www.zabbix.com/documentation/7.4/en/manual/api/reference/host/get): groupids e interfaces.
 - [problem.get](https://www.zabbix.com/documentation/7.4/en/manual/api/reference/problem/get): problemas abiertos, hostids/eventids, etiquetas y supresión.
-- [event.acknowledge](https://www.zabbix.com/documentation/7.4/en/manual/api/reference/event/acknowledge): acción 32, `suppress_until=0` y resultado eventids.
+- [event.acknowledge](https://www.zabbix.com/documentation/7.4/en/manual/api/reference/event/acknowledge): acción 36 (supresión + mensaje), `suppress_until=0` y resultado eventids.
 - [API tokens](https://www.zabbix.com/documentation/7.4/en/manual/web_interface/frontend_sections/users/api_tokens): gestión administrativa de tokens.
 
 La documentación es de la rama 7.4. Se detecta la versión real al conectar; la compatibilidad y permisos específicos de MonZabbix 7.4.16 deben validarse primero en modo lectura.
-#   P r o y e c t o - s u p r i m i r - a l e r t  
- 
+# Proyecto-suprimir-alert
+

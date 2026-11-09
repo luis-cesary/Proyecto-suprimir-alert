@@ -1,0 +1,11 @@
+{
+  "enabled": false,
+  "permissions_verified": false,
+  "approval_reference": "",
+  "daily_at": "00:01",
+  "max_events_per_day": 100,
+  "rules": [
+    {"group_name": "BANCO ESTADO", "hostids": [], "all_hosts_in_group": true,
+     "include_ips": [], "days": 14, "min_severity": 4}
+  ]
+}

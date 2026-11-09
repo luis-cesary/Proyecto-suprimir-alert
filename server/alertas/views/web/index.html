@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Supimir · Alertas Zabbix</title><link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Supimir inicio"><span class="mark">S</span><span>supimir<small>OPERACIONES ZABBIX</small></span></a>
+    <div class="nav-label">ESPACIO DE TRABAJO</div>
+    <a href="#workspace" class="nav-item active"><span>▤</span> Gestión de alertas</a>
+    <a href="#activity" class="nav-item"><span>◷</span> Registro de actividad</a>
+    <div class="side-info"><span class="live-dot"></span> Ejecución manual<p>Las operaciones requieren tu selección y confirmación.</p></div>
+    <div class="side-footer">Zabbix API <span id="api-version">7.4</span><br><span>Conexión local · MVC</span></div>
+  </aside>
+  <main id="workspace">
+    <header class="topbar"><span>Monitoreo <span class="slash">/</span> Alertas antiguas</span><span id="mode" class="badge">Conectando…</span></header>
+    <section class="heading"><div><div class="eyebrow">CONTROL DE EVENTOS</div><h1>Gestión de alertas</h1><p>Selecciona un cliente, revisa sus equipos y prueba la supresión de eventos.</p></div><button id="refresh" class="button secondary">↻ Actualizar consulta</button></section>
+    <div id="notice" class="notice">Cargando configuración…</div>
+    <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+    <div class="stats">
+      <article><span>Equipos seleccionados</span><strong id="stat-hosts">0</strong><small>Del grupo de cliente actual</small></article>
+      <article><span>Problemas abiertos</span><strong id="stat-open">—</strong><small>Recuperados en la última consulta</small></article>
+      <article><span>Elegibles para supresión</span><strong id="stat-eligible" class="teal">—</strong><small id="severity-caption">High · F5 Pool / Virtual Server</small></article>
+      <article><span>Intentos reales disponibles</span><strong id="stat-budget">—</strong><small id="budget-caption">Límite compartido de esta ejecución</small></article>
+    </div>
+    <div class="workflow">
+      <section class="panel selection">
+        <div class="panel-heading"><span class="step">01</span><h2>Cliente y equipos</h2></div>
+        <label for="group-search">Buscar cliente / grupo</label><input id="group-search" type="search" placeholder="Ej. Banco estado" autocomplete="off">
+        <label for="group">Grupo de hosts en Zabbix</label><select id="group"><option value="">Selecciona un cliente</option></select>
+        <div class="divider"></div>
+        <div class="row"><h3>Equipos del grupo</h3><span id="host-count" class="subtle">0 equipos</span></div>
+        <label for="ip-filter">Filtrar por IP, varias IP o CIDR</label><div class="input-action"><input id="ip-filter" placeholder="192.0.2.10 o 192.0.2.0/24"><button id="filter-hosts" class="button secondary" aria-label="Aplicar filtro IP">Filtrar</button></div>
+        <div class="host-actions"><button id="all-hosts" class="text-button">Seleccionar visibles</button><button id="none-hosts" class="text-button">Quitar todos</button><button id="clear-filter" class="text-button">Ver todos</button></div>
+        <div id="hosts" class="host-list"><div class="empty compact">Selecciona un grupo para cargar sus equipos.</div></div>
+        <p class="hint">Desmarca un equipo para excluirlo. Se consideran todas las interfaces IP; los equipos DNS también se pueden seleccionar.</p>
+        <label for="severity">Severidad de las alertas</label>
+        <select id="severity"><option value="0">Sin clasificar (0)</option><option value="1">Información (1)</option><option value="2">Warning (2)</option><option value="3">Average (3)</option><option value="4" selected>High (4)</option><option value="5">Disaster (5)</option></select>
+        <p class="hint">Este filtro selecciona alertas; no modifica su severidad en Zabbix.</p>
+        <label for="days">Antigüedad superior a (días)</label><input id="days" type="number" min="1" max="36500" value="14">
+        <div class="presets"><button data-days="7">7 días</button><button data-days="14">14 días</button><button data-days="30">30 días</button></div>
+        <button id="query" class="button primary full">Consultar alertas <span>→</span></button>
+      </section>
+      <section class="panel results">
+        <div class="panel-heading"><span class="step">02</span><h2>Alertas del cliente</h2><span id="query-time" class="subtle right">Sin consultar</span></div>
+        <div class="result-toolbar"><div class="tabs" role="group" aria-label="Mostrar alertas"><button id="eligible-tab" class="selected">Elegibles <span id="eligible-count">0</span></button><button id="all-tab">Todas <span id="all-count">0</span></button></div><button id="export" class="button secondary" disabled>↓ Exportar CSV</button></div>
+        <div class="table-wrap"><table><thead><tr><th><input id="all-events" type="checkbox" aria-label="Seleccionar todas las alertas elegibles"></th><th>EVENTO / PROBLEMA</th><th>HOST</th><th>ANTIGÜEDAD</th><th>ESTADO</th></tr></thead><tbody id="problems"></tbody></table><div id="empty-results" class="empty"><span class="empty-icon">▤</span><h3>Prepara tu primera consulta</h3><p>Selecciona el cliente y sus equipos.<br>Aquí verás las alertas y su elegibilidad.</p></div></div>
+        <div class="result-footer"><span><strong id="selected-count">0</strong> eventos seleccionados</span><button id="review" class="button primary" disabled>Revisar selección →</button></div>
+      </section>
+    </div>
+    <section class="panel activity" id="activity">
+      <div class="panel-heading"><span class="step">03</span><h2>Registro de actividad</h2><span class="subtle right"><span class="live-dot"></span> Actualización cada 5 s</span></div>
+      <p class="activity-intro">Consulta qué eventos se procesaron y su resultado. Las pruebas se identifican como simulaciones.</p>
+      <div class="table-wrap"><table><thead><tr><th>FECHA / MODO</th><th>CLIENTE / EVENTO</th><th>OPERACIÓN</th><th>RESULTADO</th></tr></thead><tbody id="history"></tbody></table></div>
+      <p id="empty-history" class="empty compact">Aún no hay actividad registrada.</p>
+      <details><summary>Ver logs de depuración <span>Últimas 100 líneas</span></summary><pre id="logs">Esperando registros…</pre></details>
+    </section>
+    <footer>Supimir · Gestión manual de eventos <span>Sin cambios en triggers, ítems ni integraciones.</span></footer>
+  </main>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+    <div class="dialog-heading"><span class="eyebrow">REVISIÓN DE LA OPERACIÓN</span><button id="close-dialog" class="text-button" aria-label="Cerrar">✕</button></div>
+    <h2 id="confirm-title">Confirmar selección</h2><p id="confirm-mode"></p>
+    <div id="review-list" class="review-list"></div>
+    <div class="warning">La supresión puede afectar visibilidad, escalaciones y notificaciones, incluida su entrega a InvGate. Los eventos permanecen abiertos hasta su recuperación real.</div>
+    <label id="permissions-label" for="permissions">Tras verificar los permisos con el administrador, escribe <strong>PERMISOS VERIFICADOS</strong><input id="permissions" autocomplete="off" placeholder="PERMISOS VERIFICADOS"></label>
+    <label for="confirmation">Escribe <strong>APLICAR</strong> para confirmar<input id="confirmation" autocomplete="off" placeholder="APLICAR"></label>
+    <p class="hint">Se volverá a validar cada evento antes de una escritura real. No se reintentan operaciones automáticamente.</p>
+    <div class="dialog-actions"><button id="cancel-dialog" class="button secondary">Cancelar</button><button id="apply" class="button primary" disabled>Confirmar</button></div>
+  </dialog>
+</body></html>
